@@ -1,7 +1,7 @@
 fluent-plugin-mongo-slow-query
 ==============================
 # Usage
-It will be helpful to find out the slow operations of MongoDB and ayalyze the query prototype.
+It will be helpful to find out the slow operations of MongoDB and ayalyze the query prototype.  
 The usage is almost same as **in_tail**.
 
 # Install
@@ -17,21 +17,20 @@ The usage is almost same as **in_tail**.
 ```
 
 # Notice
-The configuration parameters of **in_mongo_slow_query** are same to **in_tail**.
-The **format** and **time_format** are optional. The default will be loaded unless you set them manually. If you need to reset, reset both of them.
+The configuration parameters of **in_mongo_slow_query** are same to **in_tail**.  
+The **format** and **time_format** are optional. The default will be loaded unless you set them manually. If you need to reset, reset both of them.  
 Default:
 ```
-format /(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (query: (?<query>{.+}) update: (?<update>{.*}))|(query: (?<query>{.+})) .* (?<cost>\d+)ms/
+format /(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/
 time_format %a %b %d %H:%M:%S.%L
 ```
 
 - **time** the local time of host that the MongoDB instance running on
 - **op** the type of operation, for example: query update remove
-- **query**
-    the prototype of query, for example:
-    {name: "Sia", age: 29} => {name, age}
-    {name: "Sia", addr: {country: "China", city: "Beijing"}} => {name, addr.country, addr.city}
+- **query**  
+    the prototype of query, for example:  
+    {name: "Sia", age: 29} => {name, age}  
+    {name: "Sia", addr: {country: "China", city: "Beijing"}} => {name, addr.country, addr.city}  
     With the prototype, it's convenient to stat the slow query.
-- **update** the prototype of update, only appear when $op is update 
-- **cost** the cost time of operation, unit: ms
+- **ms** the time cost of operation, unit: ms
 

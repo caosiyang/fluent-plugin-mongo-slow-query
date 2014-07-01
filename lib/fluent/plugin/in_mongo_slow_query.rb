@@ -3,7 +3,7 @@ require 'json'
 module Fluent
     class MongoDBSlowQueryInput < TailInput
         # First, register the plugin. NAME is the name of this plugin
-        #   # and identifies the plugin in the configuration file.
+        # and identifies the plugin in the configuration file.
         Plugin.register_input('mongo_slow_query', self)
 
         # This method is called before starting.
@@ -11,7 +11,8 @@ module Fluent
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
             unless conf.has_key?("format")
-                conf["format"] = '/(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (query: (?<query>{.+}) update: (?<update>{.*}))|(query: (?<query>{.+})) .* (?<cost>\d+)ms/'
+                #conf["format"] = '/(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: (?<update>{.*}))|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
+                conf["format"] = '/(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
                 $log.warn "load default format: ", conf["format"]
             end
 
@@ -33,9 +34,9 @@ module Fluent
                         if record.has_key?("query")
                             record["query"] = get_query_prototype(record["query"])
                         end
-                        if record.has_key?("update")
-                            record["update"] = get_query_prototype(record["update"])
-                        end
+                        #if record.has_key?("update")
+                        #    record["update"] = get_query_prototype(record["update"])
+                        #end
                         es.add(time, record)
                     end
                 rescue
@@ -53,7 +54,7 @@ module Fluent
             end
         end
 
-        # exrtact query prototype recursively
+        # extract query prototype recursively
         def extract_query_prototype(query_json_obj, parent='')
             ns_array = []
             query_json_obj.each do |key, val|
@@ -69,8 +70,13 @@ module Fluent
 
         # get query prototype
         def get_query_prototype(query)
-            prototype = extract_query_prototype(JSON.parse(eval(query).to_json))
-            return '{ ' + prototype.join(', ') + ' }'
+            begin
+                prototype = extract_query_prototype(JSON.parse(eval(query).to_json))
+                return '{ ' + prototype.join(', ') + ' }'
+            rescue
+                $log.error $!.to_s
+                return query
+            end
         end
     end
 end
