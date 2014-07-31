@@ -11,8 +11,7 @@ The usage is almost same as **in_tail**.
 ```
 <source>
     type mongo_slow_query
-    path /var/log/mongo/mongod.log
-    tag mongo.slow_query
+    path /path/to/mongodb/logfile
 <source>
 ```
 
@@ -21,7 +20,7 @@ The configuration parameters of **in_mongo_slow_query** are same to **in_tail**.
 The **format** and **time_format** are optional. The default will be loaded unless you set them manually. If you need to reset, reset both of them.  
 Default:
 ```
-format /(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/
+format /(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/
 time_format %a %b %d %H:%M:%S.%L
 ```
 
@@ -29,8 +28,8 @@ time_format %a %b %d %H:%M:%S.%L
 - **op** the type of operation, for example: query update remove
 - **query**  
     the prototype of query, for example:  
-    {name: "Sia", age: 29} => {name, age}  
-    {name: "Sia", addr: {country: "China", city: "Beijing"}} => {name, addr.country, addr.city}  
+    {name: "Siyang", age: 29} => {name, age}  
+    {name: "Siyang", address: {country: "China", city: "Beijing"}} => {name, address.country, address.city}  
     With the prototype, it's convenient to stat the slow query.
 - **ms** the time cost of operation, unit: ms
 

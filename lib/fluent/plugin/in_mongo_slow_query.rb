@@ -11,7 +11,6 @@ module Fluent
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
             unless conf.has_key?("format")
-                #conf["format"] = '/(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: (?<update>{.*}))|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
                 conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
                 $log.warn "load default format: ", conf["format"]
             end
