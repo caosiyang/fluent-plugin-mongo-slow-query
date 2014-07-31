@@ -12,7 +12,7 @@ module Fluent
         def configure(conf)
             unless conf.has_key?("format")
                 #conf["format"] = '/(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: (?<update>{.*}))|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
-                conf["format"] = '/(?<time>[^ ]+ [^ ]+ [^ ]+ [^ ]+) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
+                conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
                 $log.warn "load default format: ", conf["format"]
             end
 
@@ -61,6 +61,14 @@ module Fluent
                 ns = parent.empty? ? key : (parent + '.' + key)
                 if val.class == Hash
                     ns_array += extract_query_prototype(val, ns)
+                elsif val.class == Array
+                    val.each do |item|
+                        if item.class == Hash
+                            ns_array += extract_query_prototype(item, ns)
+                        else
+                            ns_array << ns + '.' + item
+                        end
+                    end
                 else
                     ns_array << ns
                 end
@@ -71,12 +79,24 @@ module Fluent
         # get query prototype
         def get_query_prototype(query)
             begin
-                prototype = extract_query_prototype(JSON.parse(eval(query).to_json))
+                prototype = extract_query_prototype(JSON.parse(to_json(query)))
                 return '{ ' + prototype.join(', ') + ' }'
             rescue
                 $log.error $!.to_s
                 return query
             end
+        end
+
+        # convert query to JSON
+        def to_json(query)
+            res = query.gsub(/( [^ ]+?: )/) {|fieldname| fieldname_format(fieldname)}
+            return res
+        end
+
+        # format fieldname in query
+        # e.g.: { id: 1 } => { "id": 1 }
+        def fieldname_format(fieldname)
+            return ' "%s": ' % fieldname.strip.chomp(':')
         end
     end
 end
