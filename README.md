@@ -19,7 +19,7 @@ The usage is almost same as **in_tail**.
 The configuration parameters of **in_mongo_slow_query** are same to **in_tail**.  
 The **format** is designed for MongoDB log record. 
 ```
-format /(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}) planSummary: .*)|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/
+format /(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>(query: (?<query>\{.+\}) update: \{.*\}))|((?<detail>(query: (?<query>\{.+\}))) planSummary: .*)|((?<detail>query: (?<query>\{.+\}))) .* (?<ms>\d+)ms/
 ```
 
 - **time** the local time of host that the MongoDB instance running on
