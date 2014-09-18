@@ -15,17 +15,19 @@ module Fluent
                 $log.warn "load default format: ", conf["format"]
             end
 
-            unless conf.has_key?("time_format")
-                #conf["time_format"] = '%a %b %d %H:%M:%S.%L'
-                # TODO
-                # be compatible for 2.2, 2.4 and 2.6
-                # difference of time format
-                # 2.2: Wed Sep 17 10:00:00 [conn] ...
-                # 2.4: Wed Sep 17 10:00:00.123 [conn] ...
-                # 2.6: 2014-09-17T10:00:43.506+0800  [conn] ...
-                conf["time_format"] = '%a %b %d %H:%M:%S'
-                $log.warn "load default time_format: ", conf["time_format"]
-            end
+            # not set "time_format"
+            # default use Ruby's DateTime.parse() to pase time
+            #
+            # be compatible for v2.2, 2.4 and 2.6
+            # difference of time format
+            # 2.2: Wed Sep 17 10:00:00 [conn] ...
+            # 2.4: Wed Sep 17 10:00:00.123 [conn] ...
+            # 2.6: 2014-09-17T10:00:43.506+0800  [conn] ...
+            #unless conf.has_key?("time_format")
+            #    #conf["time_format"] = '%a %b %d %H:%M:%S'
+            #    #conf["time_format"] = '%a %b %d %H:%M:%S.%L'
+            #    #$log.warn "load default time_format: ", conf["time_format"]
+            #end
             super
         end
 
@@ -100,7 +102,9 @@ module Fluent
             # conversion for ObjectId
             res = res.gsub(/ObjectId\([^ ]+?\)/) {|objectid| to_string(objectid)}
             # conversion for Timestamp
-            res = res.gsub(/Timestamp [\d]+\|[\d]+/) {|timestamp| to_string(timestamp)}
+            res = res.gsub(/Timestamp \d+\|\d+/) {|timestamp| to_string(timestamp)}
+            # conversion for Date
+            res = res.gsub(/new Date\(\d+\)/) {|date| to_string(date)}
             return res
         end
 
