@@ -10,10 +10,13 @@ module Fluent
         # 'conf' is a Hash that includes configuration parameters.
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
-            unless conf.has_key?("format")
-                conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
-                $log.warn "load default format: ", conf["format"]
-            end
+            #unless conf.has_key?("format")
+            #    conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
+            #    $log.warn "load default format: ", conf["format"]
+            #end
+
+            # load default format that degisned for MongoDB
+            conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
 
             # not set "time_format"
             # default use Ruby's DateTime.parse() to pase time

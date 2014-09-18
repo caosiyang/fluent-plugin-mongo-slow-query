@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
     gem.authors     = "caosiyang"
     gem.email       = "csy3228@gmail.com"
     gem.homepage    = "https://github.com/caosiyang/fluent-plugin-mongo-slow-query"
-    gem.date        = "2014-07-31"
-    gem.version     = "0.0.4"
+    gem.date        = "2014-09-18"
+    gem.version     = "0.0.5"
     gem.license     = ""
 end
