@@ -16,7 +16,7 @@ module Fluent
             #end
 
             # load default format that degisned for MongoDB
-            conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
+            conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}) planSummary: .*)|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
 
             # not set "time_format"
             # default use Ruby's DateTime.parse() to pase time
