@@ -11,12 +11,19 @@ module Fluent
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
             unless conf.has_key?("format")
-                conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+}))) .* (?<ms>\d+)ms/'
+                conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
                 $log.warn "load default format: ", conf["format"]
             end
 
             unless conf.has_key?("time_format")
-                conf["time_format"] = '%a %b %d %H:%M:%S.%L'
+                #conf["time_format"] = '%a %b %d %H:%M:%S.%L'
+                # TODO
+                # be compatible for 2.2, 2.4 and 2.6
+                # difference of time format
+                # 2.2: Wed Sep 17 10:00:00 [conn] ...
+                # 2.4: Wed Sep 17 10:00:00.123 [conn] ...
+                # 2.6: 2014-09-17T10:00:43.506+0800  [conn] ...
+                conf["time_format"] = '%a %b %d %H:%M:%S'
                 $log.warn "load default time_format: ", conf["time_format"]
             end
             super
@@ -29,10 +36,9 @@ module Fluent
                     line.chomp!  # remove \n
                     time, record = parse_line(line)
                     if time && record
-                        # get prototype
-                        if record.has_key?("query")
-                            record["query"] = get_query_prototype(record["query"])
-                        end
+                        record["query"] = get_query_prototype(record["query"])
+                        record["ms"] = record["ms"].to_i
+                        record["ts"] = time
                         #if record.has_key?("update")
                         #    record["update"] = get_query_prototype(record["update"])
                         #end
@@ -88,7 +94,13 @@ module Fluent
 
         # convert query to JSON
         def to_json(query)
-            res = query.gsub(/( [^ ]+?: )/) {|fieldname| fieldname_format(fieldname)}
+            res = query
+            # conversion for fieldname
+            res = res.gsub(/( [^ ]+?: )/) {|fieldname| fieldname_format(fieldname)}
+            # conversion for ObjectId
+            res = res.gsub(/ObjectId\([^ ]+?\)/) {|objectid| to_string(objectid)}
+            # conversion for Timestamp
+            res = res.gsub(/Timestamp [\d]+\|[\d]+/) {|timestamp| to_string(timestamp)}
             return res
         end
 
@@ -96,6 +108,15 @@ module Fluent
         # e.g.: { id: 1 } => { "id": 1 }
         def fieldname_format(fieldname)
             return ' "%s": ' % fieldname.strip.chomp(':')
+        end
+
+        # convert value of special type to string
+        # so that convert query to json
+        def to_string(str)
+            res = str
+            res = res.gsub(/"/, '\"')
+            res = '"%s"' % res
+            return res
         end
     end
 end
