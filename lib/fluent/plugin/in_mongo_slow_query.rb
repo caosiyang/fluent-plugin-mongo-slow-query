@@ -16,7 +16,7 @@ module Fluent
             #end
 
             # load default format that degisned for MongoDB
-            conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) ((?<detail>(query: (?<query>\{.+\}) update: \{.*\}))|((?<detail>(query: (?<query>\{.+\}))) planSummary: .*)|((?<detail>query: (?<query>\{.+\})))) .* (?<ms>\d+)ms/'
+            conf["format"] = '/^(?<time>[^ ]+) \[\w+\] (?<op>\w+) (?<ns>[\w-]+\.[\-\w\$]+)(?: (?<command>[\-\w\$]+): (?:(?<commandDetail>\w+) )?(?:(?:(?<query>\{.*\}) planSummary: (?<planSummary>\w+(?: \{.*\})?)?|(?<query>\{.*\}))))?(?: (?:nscanned:(?<nscanned>\d+)|nMatched:(?<nMatched>\d+)|nModified:(?<nModified>\d+)|numYields:(?<numYields>\d+)|reslen:(?<reslen>\d+)|\w+:\d+|locks\(micros\)(?: (?:r:(?<lockread>\d+)|w:(?<lockwrite>\d+)|R:(?<lockglobread>\d+)|W:(?<lockglobwrite>\d+)|\w:\d+))))* (?<ms>\d+)ms$/'
 
             # not set "time_format"
             # default use Ruby's DateTime.parse() to pase time
@@ -44,6 +44,17 @@ module Fluent
                         record["query"] = get_query_prototype(record["query"])
                         record["ms"] = record["ms"].to_i
                         record["ts"] = time
+
+                        record["nscanned"] = record["nscanned"].to_i if record["nscanned"]
+                        record["nMatched"] = record["nMatched"].to_i if record["nMatched"]
+                        record["nModified"] = record["nModified"].to_i if record["nModified"]
+                        record["numYields"] = record["numYields"].to_i if record["numYields"]
+                        record["reslen"] = record["reslen"].to_i if record["reslen"]
+                        record["lockread"] = record["lockread"].to_f / 1000 if record["lockread"]
+                        record["lockwrite"] = record["lockwrite"].to_f  / 1000 if record["lockwrite"]
+                        record["lockglobread"] = record["lockglobread"].to_f  / 1000 if record["lockglobread"]
+                        record["lockglobwrite"] = record["lockglobwrite"].to_f  / 1000 if record["lockglobwrite"]
+
                         #if record.has_key?("update")
                         #    record["update"] = get_query_prototype(record["update"])
                         #end
@@ -92,7 +103,7 @@ module Fluent
                 prototype = extract_query_prototype(JSON.parse(to_json(query)))
                 return '{ ' + prototype.join(', ') + ' }'
             rescue
-                $log.error $!.to_s
+                $log.warn $!.to_s
                 return query
             end
         end
