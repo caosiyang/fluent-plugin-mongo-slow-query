@@ -41,7 +41,7 @@ module Fluent
                     line.chomp!  # remove \n
                     time, record = parse_line(line)
                     if time && record
-                        record["query"] = get_query_prototype(record["query"])
+                        record["query"] = get_query_prototype(record["query"]) if record["query"]
                         record["ms"] = record["ms"].to_i
                         record["ts"] = time
 
