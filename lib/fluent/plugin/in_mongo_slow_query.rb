@@ -10,22 +10,18 @@ module Fluent
         # 'conf' is a Hash that includes configuration parameters.
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
-            #unless conf.has_key?("format")
-            #    conf["format"] = '/(?<time>.*) \[\w+\] (?<op>[^ ]+) (?<ns>[^ ]+) (?<detail>((query: (?<query>{.+}) update: {.*})|(query: (?<query>{.+})))) .* (?<ms>\d+)ms/'
-            #    $log.warn "load default format: ", conf["format"]
-            #end
-
-            # load default format that degisned for MongoDB
-            conf["format"] = '/^(?<time>[^ ]+) \[\w+\] (?<op>\w+) (?<ns>[\w-]+\.[\-\w\$]+)(?: (?<command>[\-\w\$]+): (?:(?<commandDetail>\w+) )?(?:(?:(?<query>\{.*\}) planSummary: (?<planSummary>\w+(?: \{.*\})?)?|(?<query>\{.*\}))))?(?: (?:nscanned:(?<nscanned>\d+)|nMatched:(?<nMatched>\d+)|nModified:(?<nModified>\d+)|numYields:(?<numYields>\d+)|reslen:(?<reslen>\d+)|\w+:\d+|locks\(micros\)(?: (?:r:(?<lockread>\d+)|w:(?<lockwrite>\d+)|R:(?<lockglobread>\d+)|W:(?<lockglobwrite>\d+)|\w:\d+))))* (?<ms>\d+)ms$/'
+            # load log format for MongoDB
+            conf["format"] = '/^(?<time>.*?)(?:\s+\w\s\w+\s*)? \[conn\d+\] (?<op>\w+) (?<ns>\S+) (?<detail>(?:(?:query: (?<query>\{.+\}) update: \{.*\})|(?:query: (?<query>\{.*\}) planSummary: \w+(?: \{.*\})?)|(?:query: (?<query>\{.*\}))|(?:command: \{.*\}))) (?<stat>.*) (?<ms>\d+)ms$/'
 
             # not set "time_format"
             # default use Ruby's DateTime.parse() to pase time
             #
-            # be compatible for v2.2, 2.4 and 2.6
+            # be compatible for v2.2, 2.4, 2.6 and 3.0
             # difference of time format
-            # 2.2: Wed Sep 17 10:00:00 [conn] ...
-            # 2.4: Wed Sep 17 10:00:00.123 [conn] ...
-            # 2.6: 2014-09-17T10:00:43.506+0800  [conn] ...
+            # 2.2: Wed Sep 17 10:00:00 [connXXX] ...
+            # 2.4: Wed Sep 17 10:00:00.123 [connXXX] ...
+            # 2.6: 2014-09-17T10:00:43.506+0800 [connXXX] ...
+            # 3.0: 2015-03-18T15:28:44.321+0800 I QUERY    [conn5462] ...
             #unless conf.has_key?("time_format")
             #    #conf["time_format"] = '%a %b %d %H:%M:%S'
             #    #conf["time_format"] = '%a %b %d %H:%M:%S.%L'
@@ -45,19 +41,54 @@ module Fluent
                         record["ms"] = record["ms"].to_i
                         record["ts"] = time
 
-                        record["nscanned"] = record["nscanned"].to_i if record["nscanned"]
-                        record["nMatched"] = record["nMatched"].to_i if record["nMatched"]
-                        record["nModified"] = record["nModified"].to_i if record["nModified"]
-                        record["numYields"] = record["numYields"].to_i if record["numYields"]
-                        record["reslen"] = record["reslen"].to_i if record["reslen"]
-                        record["lockread"] = record["lockread"].to_f / 1000 if record["lockread"]
-                        record["lockwrite"] = record["lockwrite"].to_f  / 1000 if record["lockwrite"]
-                        record["lockglobread"] = record["lockglobread"].to_f  / 1000 if record["lockglobread"]
-                        record["lockglobwrite"] = record["lockglobwrite"].to_f  / 1000 if record["lockglobwrite"]
+                        case record["op"]
+                        when "query"
+                        when "getmore"
+                            res = /ntoskip:(?<ntoskip>\d+)/.match(record["stat"])
+                            if res
+                                record["ntoskip"] = res["ntoskip"].to_i
+                            end
+                            res = /nscanned:(?<nscanned>\d+)/.match(record["stat"])
+                            if res
+                                record["nscanned"] = res["nscanned"].to_i
+                            end
+                            res = /nreturned:(?<nreturned>\d+)/.match(record["stat"])
+                            if res
+                                record["nreturned"] = res["nreturned"].to_i
+                            end
+                            res = /reslen:(?<reslen>\d+)/.match(record["stat"])
+                            if res
+                                record["reslen"] = res["reslen"].to_i
+                            end
+                        when "update"
+                            res = /nscanned:(?<nscanned>\d+)/.match(record["stat"])
+                            if res
+                                record["nscanned"] = res["nscanned"].to_i
+                            end
+                            res = /nMatched:(?<nmatched>\d+)/.match(record["stat"])
+                            if res # MongoDB v3.0
+                                record["nmatched"] = res["nmatched"].to_i
+                                res = /nModified:(?<nmodified>\d+)/.match(record["stat"])
+                                if res
+                                    record["nmodified"] = res["nmodified"].to_i
+                                end
+                            else # MongoDB v2.4
+                                res = /nupdated:(?<nmodified>\d+)/.match(record["stat"])
+                                if res
+                                    record["nmodified"] = res["nmodified"].to_i
+                                end
+                            end
+                        when "remove"
+                            res = /ndeleted:(?<ndeleted>\d+)/.match(record["stat"])
+                            if res
+                                record["ndeleted"] = res["ndeleted"].to_i
+                            end
+                        end
 
                         #if record.has_key?("update")
                         #    record["update"] = get_query_prototype(record["update"])
                         #end
+
                         es.add(time, record)
                     end
                 rescue
