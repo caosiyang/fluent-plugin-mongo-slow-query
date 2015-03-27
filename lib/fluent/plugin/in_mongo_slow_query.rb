@@ -115,10 +115,11 @@ module Fluent
                     ns_array += extract_query_prototype(val, ns)
                 elsif val.class == Array
                     val.each do |item|
-                        if item.class == Hash
+                        if item.class == Hash # e.g. $eq $gt $gte $lt $lte $ne $in $nin 
                             ns_array += extract_query_prototype(item, ns)
-                        else
-                            ns_array << ns + '.' + item
+                        else # e.g. $and $or $nor
+                            ns_array << ns 
+                            break
                         end
                     end
                 else

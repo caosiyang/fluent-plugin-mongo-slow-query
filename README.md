@@ -22,11 +22,10 @@ The usage is almost same as **in_tail**.
 - **op** operation, for example: query update remove getmore command
 - **ns** namespace, concatenation of the database name and the collection name
 - **detail** the deatils of operation
-- **query**
-    the prototype of query, for example:
-    { address: { country: "China", city: "Beijing" } } => { address.country, address.city }
-    { ts: { $gt: 1411029300, $lt: 1411029302 } => { ts.$gt, ts.$lt }
-    With the prototype, it's convenient to stat the slow query.
+- **query** the prototype of query, for example:  
+    { address: { country: "China", city: "Beijing" } } => { address.country, address.city }  
+    { ts: { $gt: 1411029300, $lt: 1411029302 } => { ts.$gt, ts.$lt }  
+    It's convenient to statistics the similar slow queries with the same prototype and build indexes.
 - **ms** time used, unit: millisecond
 - **nscanned** number of documents scanned
 - **nmatched** number of documents matched
