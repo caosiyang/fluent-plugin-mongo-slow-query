@@ -11,7 +11,7 @@ module Fluent
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
             # load log format for MongoDB
-            conf["format"] = '/^(?<time>.*?)(?:\s+\w\s\w+\s*)? \[conn\d+\] (?<op>\w+) (?<ns>\S+) (?<detail>(?:(?:query: (?<query>\{.+\}) update: \{.*\})|(?:query: (?<query>\{.*\}) planSummary: \w+(?: \{.*\})?)|(?:query: (?<query>\{.*\}))|(?:command: \{.*\}))) (?<stat>.*) (?<ms>\d+)ms$/'
+            conf["format"] = '/^(?<time>.*?)(?:\s+\w\s\w+\s*)? \[conn\d+\] (?<op>\w+) (?<ns>\S+) (?<detail>query: (?<query>\{(?:\g<query>|[^\{\}])*\})(?: update: (?<update>\{(?:\g<update>|[^\{\}])*\}))?|command:.*?(?<command>\{(?:\g<command>|[^\{\}])*\})|.*?) (?<stat>.*?)(?: locks:\{.*\})? (?<ms>\d+)ms$/'
 
             # not set "time_format"
             # default use Ruby's DateTime.parse() to pase time
@@ -37,7 +37,11 @@ module Fluent
                     line.chomp!  # remove \n
                     time, record = parse_line(line)
                     if time && record
-                        record["query"] = get_query_prototype(record["query"]) if record["query"]
+                        if record.has_key?("query")
+                            record["query"] = get_query_prototype(record["query"])
+                        else
+                            record["query"] = ""
+                        end
                         record["ms"] = record["ms"].to_i
                         record["ts"] = time
 
@@ -115,7 +119,7 @@ module Fluent
                     ns_array += extract_query_prototype(val, ns)
                 elsif val.class == Array
                     val.each do |item|
-                        if item.class == Hash # e.g. $eq $gt $gte $lt $lte $ne $in $nin 
+                        if item.class == Hash # e.g. $eq $gt $gte $lt $lte $ne $in $nin
                             ns_array += extract_query_prototype(item, ns)
                         else # e.g. $and $or $nor
                             ns_array << ns 
